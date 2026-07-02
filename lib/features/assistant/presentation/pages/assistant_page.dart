@@ -212,52 +212,49 @@ class _AssistantPageState extends State<AssistantPage> {
   }
 
   Widget _buildMessageList(BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: LifeOsCard(
-          child: ListView.separated(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(4),
-            itemCount: _messages.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final message = _messages[index];
-              final isUser = message.author == _ChatAuthor.user;
-              return Align(
-                alignment: isUser
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: LifeOsCard(
+        child: ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(4),
+          itemCount: _messages.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final message = _messages[index];
+            final isUser = message.author == _ChatAuthor.user;
+            return Align(
+              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isUser
+                        ? lifeOsPurple.withValues(alpha: .12)
+                        : const Color(0xFFF6F7FB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
                       color: isUser
-                          ? lifeOsPurple.withValues(alpha: .12)
-                          : const Color(0xFFF6F7FB),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isUser
-                            ? lifeOsPurple.withValues(alpha: .18)
-                            : lifeOsBorder,
-                      ),
+                          ? lifeOsPurple.withValues(alpha: .18)
+                          : lifeOsBorder,
                     ),
-                    child: Text(
-                      message.text,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isUser ? lifeOsInk : lifeOsMuted,
-                        fontWeight: isUser ? FontWeight.w700 : FontWeight.w500,
-                      ),
+                  ),
+                  child: Text(
+                    message.text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isUser ? lifeOsInk : lifeOsMuted,
+                      fontWeight: isUser ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -328,10 +325,19 @@ class _AssistantPageState extends State<AssistantPage> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
-            _buildPromptRow(context),
-            _buildQuickLinks(context),
-            _buildMessageList(context),
+            Expanded(
+              child: ListView(
+                controller: _scrollController,
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildHeader(context),
+                  _buildPromptRow(context),
+                  _buildQuickLinks(context),
+                  _buildMessageList(context),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
             _buildComposer(context),
           ],
         ),

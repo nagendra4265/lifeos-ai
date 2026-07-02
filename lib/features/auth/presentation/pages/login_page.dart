@@ -420,33 +420,26 @@ class _IntroPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AuthPageShell(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const _IntroIllustration(),
-                const SizedBox(height: 28),
-                Text(
-                  'All Your Life\nIn One Place',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Notes, Expenses, Documents, Health, Calendar & more. Everything organized and AI powered.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: lifeOsMuted,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
+          const _IntroIllustration(),
+          const SizedBox(height: 28),
+          Text(
+            'All Your Life\nIn One Place',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
+          const SizedBox(height: 10),
+          Text(
+            'Notes, Expenses, Documents, Health, Calendar & more. Everything organized and AI powered.',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted, height: 1.45),
+          ),
+          const SizedBox(height: 24),
           Row(
             children: [
               const _Dot(active: true),
@@ -478,35 +471,42 @@ class _AuthPageShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 12),
-                Text(
-                  topTitle,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 12),
+                      Text(
+                        topTitle,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        topSubtitle,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+                      ),
+                      const SizedBox(height: 20),
+                      child,
+                    ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  topSubtitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
-                ),
-                const SizedBox(height: 20),
-                Expanded(child: child),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
