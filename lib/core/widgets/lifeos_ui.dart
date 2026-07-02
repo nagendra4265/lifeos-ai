@@ -101,7 +101,10 @@ class LifeOsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    ?trailing,
+                    if (trailing != null) ...[
+                      const SizedBox(width: 8),
+                      trailing!,
+                    ],
                   ],
                 ),
               ),
@@ -150,7 +153,7 @@ class LifeOsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: Material(color: Colors.transparent, child: child),
     );
 
     if (onTap == null) return card;
@@ -218,20 +221,22 @@ class LifeOsMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LifeOsCard(
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: color.withValues(alpha: .12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -240,12 +245,12 @@ class LifeOsMetricCard extends StatelessWidget {
                     context,
                   ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 if (subtitle != null)
                   Text(
