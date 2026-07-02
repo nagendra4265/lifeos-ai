@@ -95,6 +95,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final documents = ref.watch(documentsNotifierProvider);
     final query = _searchQuery.trim().toLowerCase();
 
@@ -171,12 +172,12 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
               ),
               const SizedBox(height: 16),
               GridView.count(
-                crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 3 : 2,
+                crossAxisCount: compact ? 2 : 3,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 2.25,
+                childAspectRatio: compact ? 1.85 : 2.25,
                 children: [
                   LifeOsMetricCard(
                     title: 'Documents',
@@ -192,7 +193,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                     icon: Icons.schedule_rounded,
                     color: const Color(0xFFFF4AA2),
                   ),
-                  if (MediaQuery.sizeOf(context).width > 700)
+                  if (!compact)
                     LifeOsMetricCard(
                       title: 'Favorites',
                       value: '$favorites',
@@ -269,62 +270,163 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                             const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final document = sortedDocuments[index];
-                          return LifeOsCard(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(document.icon),
-                              title: Text(document.title),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(document.category),
-                                  const SizedBox(height: 4),
-                                  Text('Expires ${document.expiryDate}'),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (document.isFavorite)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 6),
-                                      child: Icon(
-                                        Icons.favorite_rounded,
-                                        size: 16,
-                                        color: Colors.redAccent,
+                          return compact
+                              ? LifeOsCard(
+                                  onTap: () =>
+                                      context.go('/documents/${document.id}'),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(document.icon),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              document.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                            ),
+                                          ),
+                                          if (document.isFavorite)
+                                            const Icon(
+                                              Icons.favorite_rounded,
+                                              size: 16,
+                                              color: Colors.redAccent,
+                                            ),
+                                          if (document.isPinned)
+                                            const Padding(
+                                              padding: EdgeInsets.only(left: 6),
+                                              child: Icon(
+                                                Icons.push_pin_rounded,
+                                                size: 17,
+                                              ),
+                                            ),
+                                        ],
                                       ),
-                                    ),
-                                  if (document.isPinned)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 8),
-                                      child: Icon(
-                                        Icons.push_pin_rounded,
-                                        size: 18,
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        document.category,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: lifeOsMuted),
                                       ),
-                                    ),
-                                  Chip(
-                                    label: Text(
-                                      _statusLabel(document.daysUntilExpiry),
-                                    ),
-                                    backgroundColor: _statusColor(
-                                      document.daysUntilExpiry,
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Expires ${document.expiryDate}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: lifeOsMuted),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: _StatusPill(
+                                          label: _statusLabel(
+                                            document.daysUntilExpiry,
+                                          ),
+                                          color: _statusColor(
+                                            document.daysUntilExpiry,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              onTap: () =>
-                                  context.go('/documents/${document.id}'),
-                            ),
-                          );
+                                )
+                              : LifeOsCard(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(document.icon),
+                                    title: Text(document.title),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(document.category),
+                                        const SizedBox(height: 4),
+                                        Text('Expires ${document.expiryDate}'),
+                                      ],
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (document.isFavorite)
+                                          const Padding(
+                                            padding: EdgeInsets.only(right: 6),
+                                            child: Icon(
+                                              Icons.favorite_rounded,
+                                              size: 16,
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        if (document.isPinned)
+                                          const Padding(
+                                            padding: EdgeInsets.only(right: 8),
+                                            child: Icon(
+                                              Icons.push_pin_rounded,
+                                              size: 18,
+                                            ),
+                                          ),
+                                        Chip(
+                                          label: Text(
+                                            _statusLabel(
+                                              document.daysUntilExpiry,
+                                            ),
+                                          ),
+                                          backgroundColor: _statusColor(
+                                            document.daysUntilExpiry,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    onTap: () =>
+                                        context.go('/documents/${document.id}'),
+                                  ),
+                                );
                         },
                       ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 11,
         ),
       ),
     );

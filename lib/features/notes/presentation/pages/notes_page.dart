@@ -156,6 +156,7 @@ class _NotesPageState extends State<NotesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final filteredNotes = _notes.where((note) {
       final matchesSearch =
           _query.isEmpty ||
@@ -185,35 +186,52 @@ class _NotesPageState extends State<NotesPage> {
       ),
       children: [
         GridView.count(
-          crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 3 : 2,
+          crossAxisCount: compact ? 2 : 3,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 2.25,
-          children: const [
-            LifeOsMetricCard(
-              title: 'Notes',
-              value: '12',
-              subtitle: 'Saved',
-              icon: Icons.sticky_note_2_rounded,
-              color: Color(0xFF6D4CFF),
-            ),
-            LifeOsMetricCard(
-              title: 'Pinned',
-              value: '3',
-              subtitle: 'Important',
-              icon: Icons.push_pin_rounded,
-              color: Color(0xFFFF4AA2),
-            ),
-            LifeOsMetricCard(
-              title: 'Tasks',
-              value: '4',
-              subtitle: 'Action items',
-              icon: Icons.checklist_rounded,
-              color: Color(0xFF18A058),
-            ),
-          ],
+          childAspectRatio: compact ? 1.8 : 2.25,
+          children: compact
+              ? const [
+                  LifeOsMetricCard(
+                    title: 'Notes',
+                    value: '12',
+                    subtitle: 'Saved',
+                    icon: Icons.sticky_note_2_rounded,
+                    color: Color(0xFF6D4CFF),
+                  ),
+                  LifeOsMetricCard(
+                    title: 'Pinned',
+                    value: '3',
+                    subtitle: 'Important',
+                    icon: Icons.push_pin_rounded,
+                    color: Color(0xFFFF4AA2),
+                  ),
+                ]
+              : const [
+                  LifeOsMetricCard(
+                    title: 'Notes',
+                    value: '12',
+                    subtitle: 'Saved',
+                    icon: Icons.sticky_note_2_rounded,
+                    color: Color(0xFF6D4CFF),
+                  ),
+                  LifeOsMetricCard(
+                    title: 'Pinned',
+                    value: '3',
+                    subtitle: 'Important',
+                    icon: Icons.push_pin_rounded,
+                    color: Color(0xFFFF4AA2),
+                  ),
+                  LifeOsMetricCard(
+                    title: 'Tasks',
+                    value: '4',
+                    subtitle: 'Action items',
+                    icon: Icons.checklist_rounded,
+                    color: Color(0xFF18A058),
+                  ),
+                ],
         ),
         LifeOsSearchField(
           hintText: 'Search notes...',
@@ -250,23 +268,103 @@ class _NotesPageState extends State<NotesPage> {
           )
         else
           ...filteredNotes.map(
-            (note) => LifeOsListTile(
-              title: note.title,
-              subtitle: '${note.tag} • ${note.body}',
-              icon: note.icon,
-              color: note.color,
-              trailing: IconButton(
-                onPressed: () => _showNoteDetails(note),
-                icon: Icon(
-                  note.pinned
-                      ? Icons.push_pin_rounded
-                      : Icons.chevron_right_rounded,
-                ),
-              ),
-              onTap: () => _showNoteDetails(note),
-            ),
+            (note) => compact
+                ? LifeOsCard(
+                    onTap: () => _showNoteDetails(note),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: note.color.withValues(alpha: .12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                note.icon,
+                                color: note.color,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                note.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            Icon(
+                              note.pinned
+                                  ? Icons.push_pin_rounded
+                                  : Icons.chevron_right_rounded,
+                              size: 18,
+                              color: lifeOsMuted,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          note.body,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
+                        ),
+                        const SizedBox(height: 10),
+                        _TagPill(label: note.tag, color: note.color),
+                      ],
+                    ),
+                  )
+                : LifeOsListTile(
+                    title: note.title,
+                    subtitle: '${note.tag} • ${note.body}',
+                    icon: note.icon,
+                    color: note.color,
+                    trailing: IconButton(
+                      onPressed: () => _showNoteDetails(note),
+                      icon: Icon(
+                        note.pinned
+                            ? Icons.push_pin_rounded
+                            : Icons.chevron_right_rounded,
+                      ),
+                    ),
+                    onTap: () => _showNoteDetails(note),
+                  ),
           ),
       ],
+    );
+  }
+}
+
+class _TagPill extends StatelessWidget {
+  const _TagPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+        ),
+      ),
     );
   }
 }
