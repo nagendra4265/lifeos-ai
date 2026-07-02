@@ -220,20 +220,21 @@ class LifeOsMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsCard(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(compact ? 10 : 12),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: compact ? 32 : 36,
+            height: compact ? 32 : 36,
             decoration: BoxDecoration(
               color: color.withValues(alpha: .12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: compact ? 16 : 18),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: compact ? 8 : 10),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -255,9 +256,10 @@ class LifeOsMetricCard extends StatelessWidget {
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: color),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: color,
+                      fontSize: compact ? 10 : null,
+                    ),
                   ),
               ],
             ),

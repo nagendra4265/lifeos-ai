@@ -8,6 +8,7 @@ class CalendarPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'Calendar',
       subtitle: 'Today - Tue, May 21',
@@ -49,6 +50,7 @@ class CalendarPage extends StatelessWidget {
                 shrinkWrap: true,
                 crossAxisCount: 7,
                 physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: compact ? 0.92 : 1,
                 children: List.generate(35, (index) {
                   final day = index + 1;
                   final selected = day == 21;
@@ -105,6 +107,7 @@ class HealthPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'Health',
       trailing: IconButton(
@@ -151,8 +154,8 @@ class HealthPage extends StatelessWidget {
           ),
         ),
         GridView.count(
-          crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 4 : 2,
-          childAspectRatio: 1.45,
+          crossAxisCount: compact ? 2 : 4,
+          childAspectRatio: compact ? 1.25 : 1.45,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
@@ -292,6 +295,7 @@ class _PasswordsPageState extends State<PasswordsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final filtered = _items
         .where(
           (item) =>
@@ -318,13 +322,53 @@ class _PasswordsPageState extends State<PasswordsPage> {
               setState(() => _query = value.trim().toLowerCase()),
         ),
         ...filtered.map(
-          (item) => LifeOsListTile(
-            title: item.title,
-            subtitle: item.subtitle,
-            icon: item.icon,
-            color: item.color,
-            trailing: const Icon(Icons.chevron_right_rounded),
-          ),
+          (item) => compact
+              ? LifeOsCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(item.icon, color: item.color, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: lifeOsMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded),
+                    ],
+                  ),
+                )
+              : LifeOsListTile(
+                  title: item.title,
+                  subtitle: item.subtitle,
+                  icon: item.icon,
+                  color: item.color,
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                ),
         ),
       ],
     );
@@ -336,6 +380,7 @@ class JournalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'Journal',
       subtitle: 'How was your day?',
@@ -355,24 +400,25 @@ class JournalPage extends StatelessWidget {
                 ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
               ),
               const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(5, (index) {
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(compact ? 4 : 5, (index) {
                   return CircleAvatar(
-                    radius: 18,
+                    radius: compact ? 16 : 18,
                     backgroundColor: const Color(0xFFFFF2D8),
                     child: Icon(
                       Icons.sentiment_satisfied_alt_rounded,
                       color: Colors.orange.shade600,
-                      size: 20,
+                      size: compact ? 18 : 20,
                     ),
                   );
                 }),
               ),
               const SizedBox(height: 16),
               TextField(
-                minLines: 4,
-                maxLines: 6,
+                minLines: compact ? 3 : 4,
+                maxLines: compact ? 4 : 6,
                 decoration: InputDecoration(
                   hintText:
                       'Had a productive day. Finished the project and went for a long walk in the evening.',
@@ -599,6 +645,7 @@ class _FileManagerPageState extends State<FileManagerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final recentFiles = _recentFiles
         .where(
           (file) =>
@@ -625,11 +672,12 @@ class _FileManagerPageState extends State<FileManagerPage> {
               setState(() => _query = value.trim().toLowerCase()),
         ),
         GridView.count(
-          crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 6 : 3,
+          crossAxisCount: compact ? 2 : 6,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
+          childAspectRatio: compact ? 1.05 : 1,
           children: const [
             _FolderTile(
               label: 'Images',
@@ -680,13 +728,53 @@ class _FileManagerPageState extends State<FileManagerPage> {
           ),
         ),
         ...recentFiles.map(
-          (file) => LifeOsListTile(
-            title: file.title,
-            subtitle: file.subtitle,
-            icon: file.icon,
-            color: file.color,
-            trailing: const Icon(Icons.more_vert_rounded),
-          ),
+          (file) => compact
+              ? LifeOsCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: file.color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(file.icon, color: file.color, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              file.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              file.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: lifeOsMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.more_vert_rounded),
+                    ],
+                  ),
+                )
+              : LifeOsListTile(
+                  title: file.title,
+                  subtitle: file.subtitle,
+                  icon: file.icon,
+                  color: file.color,
+                  trailing: const Icon(Icons.more_vert_rounded),
+                ),
         ),
       ],
     );
@@ -826,6 +914,7 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final visibleTasks = _selectedFilter == 'All'
         ? _tasks
         : _tasks
@@ -873,12 +962,51 @@ class _TasksPageState extends State<TasksPage> {
           ],
         ),
         ...visibleTasks.map(
-          (task) => LifeOsListTile(
-            title: task.title,
-            subtitle: task.subtitle,
-            icon: task.icon,
-            color: task.color,
-          ),
+          (task) => compact
+              ? LifeOsCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: task.color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(task.icon, color: task.color, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              task.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              task.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: lifeOsMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : LifeOsListTile(
+                  title: task.title,
+                  subtitle: task.subtitle,
+                  icon: task.icon,
+                  color: task.color,
+                ),
         ),
       ],
     );
@@ -984,6 +1112,7 @@ class _ContactsPageState extends State<ContactsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final visibleContacts = _contacts
         .where(
           (contact) =>
@@ -1010,12 +1139,55 @@ class _ContactsPageState extends State<ContactsPage> {
               setState(() => _query = value.trim().toLowerCase()),
         ),
         ...visibleContacts.map(
-          (contact) => LifeOsListTile(
-            title: contact.title,
-            subtitle: contact.subtitle,
-            icon: contact.icon,
-            color: contact.color,
-          ),
+          (contact) => compact
+              ? LifeOsCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: contact.color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          contact.icon,
+                          color: contact.color,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              contact.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              contact.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: lifeOsMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : LifeOsListTile(
+                  title: contact.title,
+                  subtitle: contact.subtitle,
+                  icon: contact.icon,
+                  color: contact.color,
+                ),
         ),
       ],
     );
@@ -1125,6 +1297,7 @@ class _RemindersPageState extends State<RemindersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     final reminders = _reminders.where((item) {
       if (_selectedFilter == 'All') return true;
       if (_selectedFilter == 'Scheduled') return item.pill != null;
@@ -1166,15 +1339,62 @@ class _RemindersPageState extends State<RemindersPage> {
           ],
         ),
         ...reminders.map(
-          (item) => LifeOsListTile(
-            title: item.title,
-            subtitle: item.subtitle,
-            icon: item.icon,
-            color: item.color,
-            trailing: item.pill == null
-                ? null
-                : _Pill(label: item.pill!, color: const Color(0xFF18A058)),
-          ),
+          (item) => compact
+              ? LifeOsCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(item.icon, color: item.color, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: lifeOsMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (item.pill != null)
+                        _Pill(
+                          label: item.pill!,
+                          color: const Color(0xFF18A058),
+                        ),
+                    ],
+                  ),
+                )
+              : LifeOsListTile(
+                  title: item.title,
+                  subtitle: item.subtitle,
+                  icon: item.icon,
+                  color: item.color,
+                  trailing: item.pill == null
+                      ? null
+                      : _Pill(
+                          label: item.pill!,
+                          color: const Color(0xFF18A058),
+                        ),
+                ),
         ),
       ],
     );
@@ -1246,11 +1466,12 @@ class PremiumPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'LifeOS AI',
       subtitle: 'Your Life. Organized. Enhanced by AI.',
       children: [
-        const Center(child: LifeOsGradientIcon(size: 82)),
+        Center(child: LifeOsGradientIcon(size: compact ? 72 : 82)),
         const LifeOsListTile(
           title: 'AI Powered Search',
           subtitle: 'Find anything across your life instantly',
