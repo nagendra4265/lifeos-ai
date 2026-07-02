@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+
   static ThemeData get lightTheme {
     final base = ThemeData(
       useMaterial3: true,
@@ -12,7 +12,7 @@ class AppTheme {
     );
 
     return base.copyWith(
-      textTheme: GoogleFonts.interTextTheme(base.textTheme),
+      textTheme: base.textTheme,
       appBarTheme: const AppBarTheme(centerTitle: false),
       cardTheme: const CardThemeData(
         elevation: 0,
@@ -48,7 +48,7 @@ class AppTheme {
     );
 
     return base.copyWith(
-      textTheme: GoogleFonts.interTextTheme(base.textTheme),
+      textTheme: base.textTheme,
       appBarTheme: const AppBarTheme(centerTitle: false),
       cardTheme: const CardThemeData(
         elevation: 0,
