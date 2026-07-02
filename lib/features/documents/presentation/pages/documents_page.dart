@@ -75,6 +75,116 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
     );
   }
 
+  Future<void> _showFilterSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: StatefulBuilder(
+              builder: (context, setSheetState) {
+                void updateCategory(String category) {
+                  setState(() => _selectedCategory = category);
+                  setSheetState(() {});
+                }
+
+                void updateSort(bool ascending) {
+                  setState(() => _expiryAscending = ascending);
+                  setSheetState(() {});
+                }
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filters',
+                      style: Theme.of(sheetContext).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Refine documents by category and expiry order.',
+                      style: Theme.of(
+                        sheetContext,
+                      ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Category',
+                      style: Theme.of(sheetContext).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _documentCategories.map((category) {
+                        return ChoiceChip(
+                          label: Text(category),
+                          selected: _selectedCategory == category,
+                          onSelected: (_) => updateCategory(category),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Sort',
+                      style: Theme.of(sheetContext).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.arrow_upward_rounded),
+                      title: const Text('Expiry ascending'),
+                      trailing: _expiryAscending
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => updateSort(true),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.arrow_downward_rounded),
+                      title: const Text('Expiry descending'),
+                      trailing: !_expiryAscending
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => updateSort(false),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedCategory = 'All';
+                              _expiryAscending = true;
+                            });
+                            Navigator.of(sheetContext).pop();
+                          },
+                          child: const Text('Reset'),
+                        ),
+                        const Spacer(),
+                        FilledButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: const Text('Done'),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   bool _matchesSearchQuery(Document document, String query) {
     if (query.isEmpty) return true;
 
@@ -165,7 +275,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: _showFilterSheet,
                     icon: const Icon(Icons.tune_rounded),
                   ),
                 ],

@@ -103,6 +103,58 @@ class _ExpensesPageState extends State<ExpensesPage> {
     );
   }
 
+  Future<void> _showExpenseFilters() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Expense filters',
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 16),
+                ...['All', 'Food', 'Travel', 'Bills', 'General'].map(
+                  (category) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.category_rounded),
+                    title: Text(category),
+                    trailing: _selectedCategory == category
+                        ? const Icon(Icons.check_rounded)
+                        : null,
+                    onTap: () {
+                      setState(() => _selectedCategory = category);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() => _selectedCategory = 'All');
+                      Navigator.of(sheetContext).pop();
+                    },
+                    child: const Text('Reset'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredExpenses = _expenses.where((expense) {
@@ -119,7 +171,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
       title: 'Expenses',
       subtitle: 'May 2024 spending overview',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showExpenseFilters,
         icon: const Icon(Icons.tune_rounded),
       ),
       floatingActionButton: FloatingActionButton(

@@ -3,6 +3,101 @@ import 'package:go_router/go_router.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
+Future<void> _showDashboardSearchSheet(BuildContext context) async {
+  final queryController = TextEditingController();
+
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          8,
+          20,
+          20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Search LifeOS',
+              style: Theme.of(
+                sheetContext,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Jump into a section or look up something quickly.',
+              style: Theme.of(
+                sheetContext,
+              ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: queryController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Search notes, documents, tasks...',
+                prefixIcon: Icon(Icons.search_rounded),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Assistant'),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/assistant');
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.notes_rounded, size: 18),
+                  label: const Text('Notes'),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/notes');
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: const Text('Documents'),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/documents');
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.checklist_rounded, size: 18),
+                  label: const Text('Tasks'),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/tasks');
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void _showDashboardSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+}
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -94,7 +189,10 @@ class _TopBar extends StatelessWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
+          IconButton(
+            onPressed: () => _showDashboardSearchSheet(context),
+            icon: const Icon(Icons.search_rounded),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
@@ -121,11 +219,14 @@ class _TopBar extends StatelessWidget {
         ),
         const Spacer(),
         IconButton(
-          onPressed: () {},
+          onPressed: () => _showDashboardSnack(
+            context,
+            'Notifications and smart alerts will open here.',
+          ),
           icon: const Icon(Icons.notifications_none_rounded),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () => _showDashboardSearchSheet(context),
           icon: const Icon(Icons.auto_awesome_rounded),
         ),
         IconButton(
@@ -134,7 +235,7 @@ class _TopBar extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         FilledButton.icon(
-          onPressed: () {},
+          onPressed: () => _showDashboardSearchSheet(context),
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Add New'),
         ),

@@ -3,21 +3,254 @@ import 'package:go_router/go_router.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
-class CalendarPage extends StatelessWidget {
+void _showLifeOsSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+}
+
+Future<void> _showLifeOsActionSheet({
+  required BuildContext context,
+  required String title,
+  String? subtitle,
+  required List<Widget> children,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+                ),
+              ],
+              const SizedBox(height: 12),
+              ...children,
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
+
+  @override
+  State<CalendarPage> createState() => _CalendarPageState();
+}
+
+class _CalendarPageState extends State<CalendarPage> {
+  DateTime _focusedMonth = DateTime(2024, 5, 1);
+  DateTime _selectedDate = DateTime(2024, 5, 21);
+
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  String _monthLabel(DateTime value) {
+    return '${_monthNames[value.month - 1]} ${value.year}';
+  }
+
+  String _selectedLabel(DateTime value) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return '${weekdays[value.weekday - 1]}, ${_monthNames[value.month - 1]} ${value.day}';
+  }
+
+  void _goToPreviousMonth() {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+      _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    });
+  }
+
+  void _goToNextMonth() {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 1);
+      _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    });
+  }
+
+  Future<void> _showCalendarMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Calendar actions',
+      subtitle: 'Manage your schedule from here.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.today_rounded),
+          title: const Text('Go to today'),
+          onTap: () {
+            Navigator.of(context).pop();
+            setState(() {
+              final now = DateTime.now();
+              _focusedMonth = DateTime(now.year, now.month, 1);
+              _selectedDate = now;
+            });
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.add_rounded),
+          title: const Text('Add event'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showAddEventSheet();
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showAddEventSheet() async {
+    final titleController = TextEditingController();
+    final timeController = TextEditingController(text: '09:00 AM');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Add event',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: timeController,
+                decoration: const InputDecoration(labelText: 'Time'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      _showLifeOsSnack(
+                        context,
+                        'Event saved for ${_selectedLabel(_selectedDate)}.',
+                      );
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildCalendarCells(bool compact) {
+    final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final leadingEmpty = firstDay.weekday % 7;
+    final daysInMonth = DateUtils.getDaysInMonth(
+      _focusedMonth.year,
+      _focusedMonth.month,
+    );
+    final totalCells = ((leadingEmpty + daysInMonth + 6) ~/ 7) * 7;
+    return List.generate(totalCells, (index) {
+      if (index < leadingEmpty || index >= leadingEmpty + daysInMonth) {
+        return const SizedBox.shrink();
+      }
+      final day = index - leadingEmpty + 1;
+      final current = DateTime(_focusedMonth.year, _focusedMonth.month, day);
+      final selected =
+          current.year == _selectedDate.year &&
+          current.month == _selectedDate.month &&
+          current.day == _selectedDate.day;
+      return InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => setState(() => _selectedDate = current),
+        child: Center(
+          child: Container(
+            width: compact ? 32 : 34,
+            height: compact ? 32 : 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? lifeOsPurple : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$day',
+              style: TextStyle(
+                color: selected ? Colors.white : lifeOsInk,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'Calendar',
-      subtitle: 'Today - Tue, May 21',
+      subtitle: 'Today - ${_selectedLabel(_selectedDate)}',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showCalendarMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _showAddEventSheet,
         child: const Icon(Icons.add),
       ),
       children: [
@@ -27,20 +260,20 @@ class CalendarPage extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: _goToPreviousMonth,
                     icon: const Icon(Icons.chevron_left_rounded),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
-                        'May 2024',
+                        _monthLabel(_focusedMonth),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: _goToNextMonth,
                     icon: const Icon(Icons.chevron_right_rounded),
                   ),
                 ],
@@ -51,30 +284,7 @@ class CalendarPage extends StatelessWidget {
                 crossAxisCount: 7,
                 physics: const NeverScrollableScrollPhysics(),
                 childAspectRatio: compact ? 0.92 : 1,
-                children: List.generate(35, (index) {
-                  final day = index + 1;
-                  final selected = day == 21;
-                  return Center(
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected ? lifeOsPurple : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$day',
-                        style: TextStyle(
-                          color: selected ? Colors.white : lifeOsInk,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+                children: _buildCalendarCells(compact),
               ),
             ],
           ),
@@ -105,13 +315,39 @@ class CalendarPage extends StatelessWidget {
 class HealthPage extends StatelessWidget {
   const HealthPage({super.key});
 
+  Future<void> _showHealthMenu(BuildContext context) async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Health actions',
+      subtitle: 'Keep track of your well-being.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.insights_rounded),
+          title: const Text('View trend summary'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Health trends are ready to review.');
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.add_rounded),
+          title: const Text('Add reading'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Manual health reading saved locally.');
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 500;
     return LifeOsPage(
       title: 'Health',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: () => _showHealthMenu(context),
         icon: const Icon(Icons.more_vert_rounded),
       ),
       children: [
@@ -239,6 +475,40 @@ class _PasswordsPageState extends State<PasswordsPage> {
 
   String _query = '';
 
+  Future<void> _showVaultMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Vault actions',
+      subtitle: 'Manage your password vault.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.add_rounded),
+          title: const Text('Add password'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _addPassword();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.file_download_rounded),
+          title: const Text('Export vault'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Vault export prepared.');
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.security_rounded),
+          title: const Text('Lock vault'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Vault locked.');
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _addPassword() async {
     final siteController = TextEditingController();
     final usernameController = TextEditingController();
@@ -308,7 +578,7 @@ class _PasswordsPageState extends State<PasswordsPage> {
     return LifeOsPage(
       title: 'Passwords',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showVaultMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
@@ -375,8 +645,44 @@ class _PasswordsPageState extends State<PasswordsPage> {
   }
 }
 
-class JournalPage extends StatelessWidget {
+class JournalPage extends StatefulWidget {
   const JournalPage({super.key});
+
+  @override
+  State<JournalPage> createState() => _JournalPageState();
+}
+
+class _JournalPageState extends State<JournalPage> {
+  late final TextEditingController _journalController;
+  final List<String> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _journalController = TextEditingController(
+      text:
+          'Had a productive day. Finished the project and went for a long walk in the evening.',
+    );
+  }
+
+  @override
+  void dispose() {
+    _journalController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _attachItem(String type) async {
+    setState(() => _attachments.add(type));
+    _showLifeOsSnack(context, '$type attached to journal entry.');
+  }
+
+  Future<void> _saveEntry() async {
+    if (_journalController.text.trim().isEmpty) {
+      _showLifeOsSnack(context, 'Write something before saving.');
+      return;
+    }
+    _showLifeOsSnack(context, 'Journal entry saved.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -415,13 +721,31 @@ class JournalPage extends StatelessWidget {
                   );
                 }),
               ),
+              if (_attachments.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _attachments
+                      .map(
+                        (item) => Chip(
+                          label: Text(item),
+                          avatar: const Icon(
+                            Icons.attachment_rounded,
+                            size: 16,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
               const SizedBox(height: 16),
               TextField(
+                controller: _journalController,
                 minLines: compact ? 3 : 4,
                 maxLines: compact ? 4 : 6,
                 decoration: InputDecoration(
-                  hintText:
-                      'Had a productive day. Finished the project and went for a long walk in the evening.',
+                  hintText: 'Write your thoughts here...',
                   filled: true,
                   fillColor: const Color(0xFFF6F7FB),
                   border: OutlineInputBorder(
@@ -434,19 +758,22 @@ class JournalPage extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => _attachItem('Voice note'),
                     icon: const Icon(Icons.mic_none_rounded),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => _attachItem('Image'),
                     icon: const Icon(Icons.image_outlined),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => _attachItem('Camera shot'),
                     icon: const Icon(Icons.camera_alt_outlined),
                   ),
                   const Spacer(),
-                  FilledButton(onPressed: () {}, child: const Text('Save')),
+                  FilledButton(
+                    onPressed: _saveEntry,
+                    child: const Text('Save'),
+                  ),
                 ],
               ),
             ],
@@ -460,16 +787,42 @@ class JournalPage extends StatelessWidget {
 class MemoriesPage extends StatelessWidget {
   const MemoriesPage({super.key});
 
+  Future<void> _showMemoriesMenu(BuildContext context) async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Memories actions',
+      subtitle: 'Browse and save life moments.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.add_photo_alternate_rounded),
+          title: const Text('Add memory'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Memory capture started.');
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.filter_alt_rounded),
+          title: const Text('Filter by people'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'People filter applied.');
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LifeOsPage(
       title: 'Memories',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: () => _showMemoriesMenu(context),
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => _showMemoriesMenu(context),
         child: const Icon(Icons.add),
       ),
       children: [
@@ -588,6 +941,32 @@ class _FileManagerPageState extends State<FileManagerPage> {
 
   String _query = '';
 
+  Future<void> _showFileMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'File manager',
+      subtitle: 'Organize uploads and storage.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.upload_file_rounded),
+          title: const Text('Upload file'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _addFile();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.storage_rounded),
+          title: const Text('Storage details'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Storage details opened.');
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _addFile() async {
     final titleController = TextEditingController();
     final subtitleController = TextEditingController();
@@ -658,7 +1037,7 @@ class _FileManagerPageState extends State<FileManagerPage> {
     return LifeOsPage(
       title: 'File Manager',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showFileMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
@@ -858,6 +1237,32 @@ class _TasksPageState extends State<TasksPage> {
 
   String _selectedFilter = 'All';
 
+  Future<void> _showTaskMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Task actions',
+      subtitle: 'Create and organize tasks.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.add_rounded),
+          title: const Text('New task'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _addTask();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.filter_alt_rounded),
+          title: const Text('Clear filters'),
+          onTap: () {
+            Navigator.of(context).pop();
+            setState(() => _selectedFilter = 'All');
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _addTask() async {
     final titleController = TextEditingController();
     final dueController = TextEditingController(text: 'Today');
@@ -928,7 +1333,7 @@ class _TasksPageState extends State<TasksPage> {
     return LifeOsPage(
       title: 'Tasks',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showTaskMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
@@ -1056,6 +1461,32 @@ class _ContactsPageState extends State<ContactsPage> {
 
   String _query = '';
 
+  Future<void> _showContactsMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Contacts actions',
+      subtitle: 'Manage your people list.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.person_add_alt_1_rounded),
+          title: const Text('Add contact'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _addContact();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.search_rounded),
+          title: const Text('Clear search'),
+          onTap: () {
+            Navigator.of(context).pop();
+            setState(() => _query = '');
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _addContact() async {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
@@ -1125,7 +1556,7 @@ class _ContactsPageState extends State<ContactsPage> {
     return LifeOsPage(
       title: 'Contacts',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showContactsMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
@@ -1241,6 +1672,32 @@ class _RemindersPageState extends State<RemindersPage> {
 
   String _selectedFilter = 'All';
 
+  Future<void> _showReminderMenu() async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Reminder actions',
+      subtitle: 'Keep alerts on track.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.add_alarm_rounded),
+          title: const Text('Add reminder'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _addReminder();
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.filter_alt_off_rounded),
+          title: const Text('Show all reminders'),
+          onTap: () {
+            Navigator.of(context).pop();
+            setState(() => _selectedFilter = 'All');
+          },
+        ),
+      ],
+    );
+  }
+
   Future<void> _addReminder() async {
     final titleController = TextEditingController();
     final subtitleController = TextEditingController(text: 'Today');
@@ -1310,7 +1767,7 @@ class _RemindersPageState extends State<RemindersPage> {
     return LifeOsPage(
       title: 'Reminders',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showReminderMenu,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(
@@ -1404,6 +1861,10 @@ class _RemindersPageState extends State<RemindersPage> {
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  void _openSetting(BuildContext context, String title) {
+    _showLifeOsSnack(context, '$title will be connected in the next release.');
+  }
+
   @override
   Widget build(BuildContext context) {
     return LifeOsPage(
@@ -1415,41 +1876,47 @@ class SettingsPage extends StatelessWidget {
           icon: Icons.person_rounded,
           color: Color(0xFFB08A63),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'Account',
           subtitle: 'Profile, password, and devices',
           icon: Icons.person_outline_rounded,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'Account'),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'Security & Privacy',
           subtitle: 'Biometrics, vault, permissions',
           icon: Icons.security_rounded,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'Security & Privacy'),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'AI Preferences',
           subtitle: 'Memory, tone, suggestions',
           icon: Icons.auto_awesome_rounded,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'AI Preferences'),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'Notifications',
           subtitle: 'Reminders and digest alerts',
           icon: Icons.notifications_none_rounded,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'Notifications'),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'Backup & Sync',
           subtitle: 'Cloud sync and exports',
           icon: Icons.cloud_sync_rounded,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'Backup & Sync'),
         ),
-        const LifeOsListTile(
+        LifeOsListTile(
           title: 'Theme',
           subtitle: 'System',
           icon: Icons.dark_mode_outlined,
-          trailing: Icon(Icons.chevron_right_rounded),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _openSetting(context, 'Theme'),
         ),
         TextButton.icon(
           onPressed: () => context.go('/login'),
@@ -1463,6 +1930,37 @@ class SettingsPage extends StatelessWidget {
 
 class PremiumPage extends StatelessWidget {
   const PremiumPage({super.key});
+
+  Future<void> _showUpgradeSheet(BuildContext context) async {
+    await _showLifeOsActionSheet(
+      context: context,
+      title: 'Upgrade to Premium',
+      subtitle: 'Unlock a few more polished tools and AI features.',
+      children: [
+        ListTile(
+          leading: const Icon(Icons.workspace_premium_rounded),
+          title: const Text('Monthly plan'),
+          subtitle: const Text('Best for trying LifeOS AI'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(
+              context,
+              'Premium checkout is ready to integrate.',
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_month_rounded),
+          title: const Text('Annual plan'),
+          subtitle: const Text('Best value for regular use'),
+          onTap: () {
+            Navigator.of(context).pop();
+            _showLifeOsSnack(context, 'Annual plan preview opened.');
+          },
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1492,7 +1990,10 @@ class PremiumPage extends StatelessWidget {
           subtitle: 'Notes, expenses, documents, health, and more',
           icon: Icons.all_inbox_rounded,
         ),
-        FilledButton(onPressed: () {}, child: const Text('Upgrade to Premium')),
+        FilledButton(
+          onPressed: () => _showUpgradeSheet(context),
+          child: const Text('Upgrade to Premium'),
+        ),
       ],
     );
   }

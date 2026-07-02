@@ -154,6 +154,65 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  Future<void> _showNoteActions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Notes actions',
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.add_rounded),
+                  title: const Text('New note'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showNoteEditor();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.push_pin_rounded),
+                  title: const Text('Pinned only'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    setState(() => _selectedFilter = 'Pinned');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.checklist_rounded),
+                  title: const Text('Task notes'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    setState(() => _selectedFilter = 'Tasks');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.filter_alt_off_rounded),
+                  title: const Text('Show all'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    setState(() => _selectedFilter = 'All');
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 500;
@@ -177,7 +236,7 @@ class _NotesPageState extends State<NotesPage> {
       title: 'Notes',
       subtitle: 'Capture ideas, plans, and quick thoughts',
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: _showNoteActions,
         icon: const Icon(Icons.more_vert_rounded),
       ),
       floatingActionButton: FloatingActionButton(

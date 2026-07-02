@@ -50,6 +50,7 @@ class _LoginPageState extends State<LoginPage> {
             _SignInPage(
               onDemoSignIn: () => context.go('/'),
               onGoToSignUp: () => context.go('/register'),
+              onForgotPassword: _showPasswordResetSheet,
             ),
             _SignUpPage(
               onRegister: () => context.go('/'),
@@ -68,6 +69,81 @@ class _LoginPageState extends State<LoginPage> {
           curve: Curves.easeOut,
         ),
       ),
+    );
+  }
+
+  Future<void> _showPasswordResetSheet() async {
+    final emailController = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reset password',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'We will send a reset link to the email on file.',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            emailController.text.trim().isEmpty
+                                ? 'Reset link prepared for your account.'
+                                : 'Reset link sent to ${emailController.text.trim()}.',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.send_rounded),
+                    label: const Text('Send link'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -160,10 +236,15 @@ class _SplashPageState extends State<_SplashPage> {
 }
 
 class _SignInPage extends StatelessWidget {
-  const _SignInPage({required this.onDemoSignIn, required this.onGoToSignUp});
+  const _SignInPage({
+    required this.onDemoSignIn,
+    required this.onGoToSignUp,
+    required this.onForgotPassword,
+  });
 
   final VoidCallback onDemoSignIn;
   final VoidCallback onGoToSignUp;
+  final VoidCallback onForgotPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +287,7 @@ class _SignInPage extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: onForgotPassword,
               child: const Text('Forgot Password?'),
             ),
           ),
