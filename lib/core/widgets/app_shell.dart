@@ -72,8 +72,10 @@ class _AppShellState extends State<AppShell> {
         body: Row(
           children: [
             _SideMenu(
-              selectedIndex: widget.navigationShell.currentIndex,
-              onSelected: _goBranch,
+              selectedIndex: _sidebarIndexForBranch(
+                widget.navigationShell.currentIndex,
+              ),
+              onSelected: _goBranchFromSidebar,
             ),
             const VerticalDivider(width: 1, color: lifeOsBorder),
             Expanded(child: widget.navigationShell),
@@ -146,6 +148,60 @@ class _AppShellState extends State<AppShell> {
       branchIndex,
       initialLocation: branchIndex == widget.navigationShell.currentIndex,
     );
+  }
+
+  void _goBranchFromSidebar(int index) {
+    final branchIndex = _branchIndexForSidebar(index);
+    if (branchIndex == null) return;
+
+    widget.navigationShell.goBranch(
+      branchIndex,
+      initialLocation: branchIndex == widget.navigationShell.currentIndex,
+    );
+  }
+
+  int? _branchIndexForSidebar(int index) {
+    return switch (index) {
+      0 => 0,
+      1 => 1,
+      2 => 4,
+      3 => 3,
+      4 => 2,
+      5 => 5,
+      6 => 6,
+      7 => 7,
+      8 => 8,
+      9 => 9,
+      10 => 10,
+      11 => 11,
+      12 => 12,
+      13 => 13,
+      14 => 14,
+      15 => 15,
+      _ => null,
+    };
+  }
+
+  int _sidebarIndexForBranch(int branchIndex) {
+    return switch (branchIndex) {
+      0 => 0,
+      1 => 1,
+      2 => 4,
+      3 => 3,
+      4 => 2,
+      5 => 5,
+      6 => 6,
+      7 => 7,
+      8 => 8,
+      9 => 9,
+      10 => 10,
+      11 => 11,
+      12 => 12,
+      13 => 13,
+      14 => 14,
+      15 => 15,
+      _ => 0,
+    };
   }
 
   void _showMoreSheet(BuildContext context) {
