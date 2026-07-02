@@ -3,12 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
-  static const _items = [
+  static const items = [
     _ShellItem('Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded),
     _ShellItem(
       'AI Assistant',
@@ -60,6 +60,11 @@ class AppShell extends StatelessWidget {
   ];
 
   @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     if (wide) {
@@ -67,40 +72,204 @@ class AppShell extends StatelessWidget {
         body: Row(
           children: [
             _SideMenu(
-              selectedIndex: navigationShell.currentIndex,
+              selectedIndex: widget.navigationShell.currentIndex,
               onSelected: _goBranch,
             ),
             const VerticalDivider(width: 1, color: lifeOsBorder),
-            Expanded(child: navigationShell),
+            Expanded(child: widget.navigationShell),
           ],
         ),
       );
     }
 
-    final current = navigationShell.currentIndex;
-    final selectedIndex = current < 5 ? current : 0;
+    final current = widget.navigationShell.currentIndex;
+    final selectedIndex = switch (current) {
+      0 => 0,
+      1 => 1,
+      4 => 2,
+      2 => 3,
+      _ => 4,
+    };
 
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: NavigationBar(
         height: 72,
         selectedIndex: selectedIndex,
         onDestinationSelected: _goBranch,
-        destinations: _items.take(5).map((item) {
-          return NavigationDestination(
-            icon: Icon(item.icon),
-            selectedIcon: Icon(item.selectedIcon),
-            label: item.label,
-          );
-        }).toList(),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard_rounded),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_awesome_outlined),
+            selectedIcon: Icon(Icons.auto_awesome_rounded),
+            label: 'Assistant',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notes_outlined),
+            selectedIcon: Icon(Icons.notes_rounded),
+            label: 'Notes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.folder_open_outlined),
+            selectedIcon: Icon(Icons.folder_open_rounded),
+            label: 'Documents',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps_rounded),
+            label: 'More',
+          ),
+        ],
       ),
     );
   }
 
   void _goBranch(int index) {
-    navigationShell.goBranch(
-      index,
-      initialLocation: index == navigationShell.currentIndex,
+    if (index == 4) {
+      _showMoreSheet(context);
+      return;
+    }
+
+    final branchIndex = switch (index) {
+      0 => 0,
+      1 => 1,
+      2 => 4,
+      3 => 2,
+      _ => 0,
+    };
+
+    widget.navigationShell.goBranch(
+      branchIndex,
+      initialLocation: branchIndex == widget.navigationShell.currentIndex,
+    );
+  }
+
+  void _showMoreSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'More',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Open the rest of LifeOS',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
+                ),
+                const SizedBox(height: 16),
+                GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.18,
+                  children: [
+                    _MoreTile(
+                      label: 'Expenses',
+                      icon: Icons.receipt_long_rounded,
+                      color: const Color(0xFF18A058),
+                      onTap: () => _goAndClose(context, 3),
+                    ),
+                    _MoreTile(
+                      label: 'Calendar',
+                      icon: Icons.calendar_month_rounded,
+                      color: const Color(0xFF6D4CFF),
+                      onTap: () => _goAndClose(context, 5),
+                    ),
+                    _MoreTile(
+                      label: 'Health',
+                      icon: Icons.favorite_rounded,
+                      color: const Color(0xFFFF4AA2),
+                      onTap: () => _goAndClose(context, 6),
+                    ),
+                    _MoreTile(
+                      label: 'Passwords',
+                      icon: Icons.lock_rounded,
+                      color: const Color(0xFFFF7A45),
+                      onTap: () => _goAndClose(context, 7),
+                    ),
+                    _MoreTile(
+                      label: 'Journal',
+                      icon: Icons.edit_note_rounded,
+                      color: const Color(0xFF3D5AFE),
+                      onTap: () => _goAndClose(context, 8),
+                    ),
+                    _MoreTile(
+                      label: 'Memories',
+                      icon: Icons.photo_library_rounded,
+                      color: const Color(0xFF00A88F),
+                      onTap: () => _goAndClose(context, 9),
+                    ),
+                    _MoreTile(
+                      label: 'Tasks',
+                      icon: Icons.checklist_rounded,
+                      color: const Color(0xFFFFB547),
+                      onTap: () => _goAndClose(context, 10),
+                    ),
+                    _MoreTile(
+                      label: 'Files',
+                      icon: Icons.folder_copy_rounded,
+                      color: const Color(0xFF6D4CFF),
+                      onTap: () => _goAndClose(context, 11),
+                    ),
+                    _MoreTile(
+                      label: 'Contacts',
+                      icon: Icons.contacts_rounded,
+                      color: const Color(0xFFFF4AA2),
+                      onTap: () => _goAndClose(context, 12),
+                    ),
+                    _MoreTile(
+                      label: 'Reminders',
+                      icon: Icons.notifications_rounded,
+                      color: const Color(0xFF18A058),
+                      onTap: () => _goAndClose(context, 13),
+                    ),
+                    _MoreTile(
+                      label: 'Settings',
+                      icon: Icons.settings_rounded,
+                      color: const Color(0xFF3D5AFE),
+                      onTap: () => _goAndClose(context, 14),
+                    ),
+                    _MoreTile(
+                      label: 'Premium',
+                      icon: Icons.workspace_premium_rounded,
+                      color: const Color(0xFF6D4CFF),
+                      onTap: () => _goAndClose(context, 15),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _goAndClose(BuildContext context, int branchIndex) {
+    Navigator.of(context).pop();
+    widget.navigationShell.goBranch(
+      branchIndex,
+      initialLocation: branchIndex == widget.navigationShell.currentIndex,
     );
   }
 }
@@ -170,9 +339,9 @@ class _SideMenu extends StatelessWidget {
                   horizontal: 10,
                   vertical: 8,
                 ),
-                itemCount: AppShell._items.length,
+                itemCount: AppShell.items.length,
                 itemBuilder: (context, index) {
-                  final item = AppShell._items[index];
+                  final item = AppShell.items[index];
                   final selected = index == selectedIndex;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -250,4 +419,50 @@ class _ShellItem {
   final String label;
   final IconData icon;
   final IconData selectedIcon;
+}
+
+class _MoreTile extends StatelessWidget {
+  const _MoreTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LifeOsCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
 }
