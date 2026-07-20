@@ -8,7 +8,17 @@ import 'package:flutter_application_1/features/dashboard/presentation/pages/dash
 import 'package:flutter_application_1/features/documents/presentation/pages/documents_detail_page.dart';
 import 'package:flutter_application_1/features/documents/presentation/pages/documents_page.dart';
 import 'package:flutter_application_1/features/expenses/presentation/pages/expenses_page.dart';
-import 'package:flutter_application_1/features/lifeos/presentation/pages/lifeos_pages.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/calendar_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/contacts_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/file_manager_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/health_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/journal_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/memories_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/passwords_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/premium_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/reminders_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/settings_page.dart';
+import 'package:flutter_application_1/features/lifeos/presentation/pages/tasks_page.dart';
 import 'package:flutter_application_1/features/notes/presentation/pages/notes_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) => AppRouter(ref).router);

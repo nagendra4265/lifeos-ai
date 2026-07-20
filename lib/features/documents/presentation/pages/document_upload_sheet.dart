@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_application_1/features/documents/data/documents_notifier.dart';
-import 'package:flutter_application_1/features/documents/domain/document.dart';
+import 'package:flutter_application_1/core/models/document.dart';
+import 'package:uuid/uuid.dart';
 
 class DocumentUploadSheet extends StatefulWidget {
   const DocumentUploadSheet({required this.ref, super.key});
@@ -169,13 +170,13 @@ class _DocumentUploadSheetState extends State<DocumentUploadSheet> {
                             ocrExtractedText: _ocrController.text.trim().isEmpty
                                 ? 'Imported OCR text is ready for AI extraction.'
                                 : _ocrController.text.trim(),
-                            icon: _category == 'Medical'
+                            iconCodePoint: (_category == 'Medical'
                                 ? Icons.local_hospital_rounded
                                 : _category == 'Travel'
                                 ? Icons.flight_takeoff_rounded
                                 : _category == 'Financial'
                                 ? Icons.account_balance_wallet_rounded
-                                : Icons.document_scanner_rounded,
+                                : Icons.document_scanner_rounded).codePoint,
                             metadata: {
                               'Category': _category,
                               'Issuer': 'Imported document',

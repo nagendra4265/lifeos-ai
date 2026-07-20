@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_application_1/features/documents/data/documents_notifier.dart';
-import 'package:flutter_application_1/features/documents/domain/document.dart';
+import 'package:flutter_application_1/core/models/document.dart';
 
 class DocumentsDetailPage extends ConsumerStatefulWidget {
   const DocumentsDetailPage({required this.documentId, super.key});

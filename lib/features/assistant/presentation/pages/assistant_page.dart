@@ -1,37 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_application_1/features/assistant/domain/context_search_service.dart';
+import 'package:flutter_application_1/core/providers/expenses_provider.dart';
+import 'package:flutter_application_1/core/providers/reminders_provider.dart';
+import 'package:flutter_application_1/core/providers/user_profile_provider.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
-class AssistantPage extends StatefulWidget {
+class AssistantPage extends ConsumerStatefulWidget {
   const AssistantPage({super.key});
 
   @override
-  State<AssistantPage> createState() => _AssistantPageState();
+  ConsumerState<AssistantPage> createState() => _AssistantPageState();
 }
 
-class _AssistantPageState extends State<AssistantPage> {
+class _AssistantPageState extends ConsumerState<AssistantPage> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage(
-      author: _ChatAuthor.assistant,
-      text:
-          'I can help with your calendar, expenses, notes, documents, and reminders.',
-    ),
-    const _ChatMessage(
-      author: _ChatAuthor.assistant,
-      text:
-          'Try asking about what you spent this month, where your passport is saved, or what is coming up today.',
-    ),
-  ];
+  late List<_ChatMessage> _messages;
+  bool _isThinking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(userProfileProvider);
+    _messages = [
+      _ChatMessage(
+        author: _ChatAuthor.assistant,
+        text:
+            'Hello ${profile.name.split(' ')[0]}! I am your LifeOS Assistant. I have real-time access to your notes, expenses, tasks, and reminders.',
+      ),
+      const _ChatMessage(
+        author: _ChatAuthor.assistant,
+        text:
+            'Ask me anything about your life data. For example: "How much did I spend total?" or "What are my pending tasks?"',
+      ),
+    ];
+  }
 
   final List<String> _prompts = const [
-    'What did I spend on food this month?',
-    'Where is my passport?',
+    'How much did I spend total?',
+    'What are my pending tasks?',
     'Show my upcoming reminders.',
-    'What is on my calendar today?',
+    'Search my notes.',
   ];
 
   @override
@@ -52,53 +66,33 @@ class _AssistantPageState extends State<AssistantPage> {
     });
   }
 
-  void _sendMessage(String rawInput) {
+  Future<void> _sendMessage(String rawInput) async {
     final input = rawInput.trim();
-    if (input.isEmpty) return;
+    if (input.isEmpty || _isThinking) return;
 
     setState(() {
       _messages.add(_ChatMessage(author: _ChatAuthor.user, text: input));
-      _messages.add(
-        _ChatMessage(author: _ChatAuthor.assistant, text: _buildReply(input)),
-      );
+      _isThinking = true;
     });
     _inputController.clear();
     _scrollToBottom();
-  }
 
-  String _buildReply(String input) {
-    final lowered = input.toLowerCase();
-
-    if (lowered.contains('passport') || lowered.contains('document')) {
-      return 'Your passport is in Documents > Identity. It is marked as pinned and expires on 2028-06-15.';
+    final response = await ref.read(contextSearchServiceProvider).query(input);
+    
+    if (mounted) {
+      setState(() {
+        _isThinking = false;
+        _messages.add(_ChatMessage(author: _ChatAuthor.assistant, text: response));
+      });
+      _scrollToBottom();
     }
-
-    if (lowered.contains('spend') ||
-        lowered.contains('expense') ||
-        lowered.contains('food')) {
-      return 'You spent about ₹48,650 this month. Food & Dining is the largest category, followed by transport and shopping.';
-    }
-
-    if (lowered.contains('remind') || lowered.contains('task')) {
-      return 'You have reminders for car insurance renewal, a doctor appointment, passport expiry, and birthday plans.';
-    }
-
-    if (lowered.contains('calendar') || lowered.contains('today')) {
-      return 'Today you have Doctor Appointment at 11:00 AM, Team Standup at 2:00 PM, and Dinner with Rahul at 8:00 PM.';
-    }
-
-    if (lowered.contains('health') || lowered.contains('sleep')) {
-      return 'Your health score is 86 out of 100, with a stable heart rate and everything in the normal range.';
-    }
-
-    if (lowered.contains('note')) {
-      return 'Your recent notes include Goa Trip Plan, Project Ideas, and Daily Thoughts. All are searchable from Notes.';
-    }
-
-    return 'I checked the core LifeOS views. I can connect that request to your docs, notes, reminders, expenses, or calendar next.';
   }
 
   Widget _buildHeader(BuildContext context) {
+    final expenses = ref.watch(expensesProvider).valueOrNull ?? [];
+    final totalSpent = expenses.fold<double>(0, (sum, e) => sum + e.amount);
+    final reminders = ref.watch(remindersProvider).valueOrNull ?? [];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Column(
@@ -118,7 +112,7 @@ class _AssistantPageState extends State<AssistantPage> {
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     Text(
-                      'Ask anything about your life',
+                      'Real-time life intelligence',
                       style: Theme.of(
                         context,
                       ).textTheme.bodyMedium?.copyWith(color: lifeOsMuted),
@@ -146,21 +140,21 @@ class _AssistantPageState extends State<AssistantPage> {
                     final cards = [
                       _SummaryPill(
                         title: 'Spent',
-                        value: '₹48,650',
+                        value: NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(totalSpent),
                         icon: Icons.receipt_long_rounded,
                         color: const Color(0xFF6D4CFF),
                       ),
                       _SummaryPill(
                         title: 'Reminders',
-                        value: '5 active',
+                        value: '${reminders.length} active',
                         icon: Icons.notifications_none_rounded,
                         color: const Color(0xFFFF4AA2),
                       ),
-                      _SummaryPill(
-                        title: 'Docs',
-                        value: '12 saved',
-                        icon: Icons.folder_open_rounded,
-                        color: const Color(0xFF18A058),
+                      const _SummaryPill(
+                        title: 'Status',
+                        value: 'Connected',
+                        icon: Icons.check_circle_outline_rounded,
+                        color: Color(0xFF18A058),
                       ),
                     ];
 
@@ -334,6 +328,24 @@ class _AssistantPageState extends State<AssistantPage> {
                   _buildPromptRow(context),
                   _buildQuickLinks(context),
                   _buildMessageList(context),
+                  if (_isThinking)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                      child: Row(
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: lifeOsPurple),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'AI is thinking...',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: lifeOsMuted, fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 12),
                 ],
               ),

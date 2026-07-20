@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 import 'package:flutter_application_1/features/documents/data/documents_notifier.dart';
-import 'package:flutter_application_1/features/documents/domain/document.dart';
+import 'package:flutter_application_1/core/models/document.dart';
 import 'package:flutter_application_1/features/documents/presentation/pages/document_upload_sheet.dart';
 
 class DocumentsPage extends ConsumerStatefulWidget {
@@ -390,7 +390,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(document.icon),
+                                          Icon(document.iconCodePoint != 0 ? IconData(document.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.description_rounded),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(
@@ -459,7 +459,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                                   ),
                                   child: ListTile(
                                     contentPadding: EdgeInsets.zero,
-                                    leading: Icon(document.icon),
+                                    leading: Icon(document.iconCodePoint != 0 ? IconData(document.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.description_rounded),
                                     title: Text(document.title),
                                     subtitle: Column(
                                       crossAxisAlignment:

@@ -1,53 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application_1/core/models/note.dart';
+import 'package:flutter_application_1/core/providers/notes_provider.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
-class NotesPage extends StatefulWidget {
+class NotesPage extends ConsumerStatefulWidget {
   const NotesPage({super.key});
 
   @override
-  State<NotesPage> createState() => _NotesPageState();
+  ConsumerState<NotesPage> createState() => _NotesPageState();
 }
 
-class _NotesPageState extends State<NotesPage> {
-  final List<_NoteItem> _notes = [
-    const _NoteItem(
-      title: 'Trip plan to Goa',
-      body: 'AI summary ready. 3 tags. Voice note attached.',
-      icon: Icons.beach_access_rounded,
-      tag: 'Personal',
-      color: Color(0xFF3D5AFE),
-      pinned: true,
-    ),
-    const _NoteItem(
-      title: 'Project Ideas',
-      body: 'New feature list for the LifeOS dashboard.',
-      icon: Icons.lightbulb_rounded,
-      tag: 'Work',
-      color: Color(0xFFFFB547),
-    ),
-    const _NoteItem(
-      title: 'Daily Thoughts',
-      body: 'A short reflection from last night.',
-      icon: Icons.edit_note_rounded,
-      tag: 'Journal',
-      color: Color(0xFFFF4AA2),
-    ),
-  ];
-
+class _NotesPageState extends ConsumerState<NotesPage> {
   String _query = '';
   String _selectedFilter = 'All';
 
-  Future<void> _showNoteEditor() async {
-    final titleController = TextEditingController();
-    final bodyController = TextEditingController();
-    final tagController = TextEditingController(text: 'Personal');
+  Future<void> _showNoteEditor({Note? note}) async {
+    final titleController = TextEditingController(text: note?.title);
+    final bodyController = TextEditingController(text: note?.content);
+    final tagController = TextEditingController(
+      text: note?.tags?.isNotEmpty == true ? note!.tags!.first : 'Personal',
+    );
 
     await showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('New note'),
+          title: Text(note == null ? 'New note' : 'Edit note'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -81,20 +61,20 @@ class _NotesPageState extends State<NotesPage> {
                 final body = bodyController.text.trim();
                 if (title.isEmpty || body.isEmpty) return;
 
-                setState(() {
-                  _notes.insert(
-                    0,
-                    _NoteItem(
+                if (note == null) {
+                  ref.read(notesProvider.notifier).addNote(
+                    title: title,
+                    content: body,
+                  );
+                } else {
+                  ref.read(notesProvider.notifier).updateNote(
+                    note.copyWith(
                       title: title,
-                      body: body,
-                      icon: Icons.note_alt_rounded,
-                      tag: tagController.text.trim().isEmpty
-                          ? 'Personal'
-                          : tagController.text.trim(),
-                      color: lifeOsPurple,
+                      content: body,
+                      tags: [tagController.text.trim()],
                     ),
                   );
-                });
+                }
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -105,7 +85,7 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  void _showNoteDetails(_NoteItem note) {
+  void _showNoteDetails(Note note) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -124,13 +104,13 @@ class _NotesPageState extends State<NotesPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                note.tag,
+                note.tags?.join(', ') ?? 'No tags',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
               ),
               const SizedBox(height: 12),
-              Text(note.body),
+              Text(note.content),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -139,9 +119,20 @@ class _NotesPageState extends State<NotesPage> {
                     icon: const Icon(Icons.close_rounded),
                     label: const Text('Close'),
                   ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      ref.read(notesProvider.notifier).deleteNote(note.id);
+                    },
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _showNoteEditor(note: note);
+                    },
                     icon: const Icon(Icons.edit_rounded),
                     label: const Text('Edit'),
                   ),
@@ -154,250 +145,114 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  Future<void> _showNoteActions() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Notes actions',
-                  style: Theme.of(
-                    sheetContext,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.add_rounded),
-                  title: const Text('New note'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _showNoteEditor();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.push_pin_rounded),
-                  title: const Text('Pinned only'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    setState(() => _selectedFilter = 'Pinned');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.checklist_rounded),
-                  title: const Text('Task notes'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    setState(() => _selectedFilter = 'Tasks');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.filter_alt_off_rounded),
-                  title: const Text('Show all'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    setState(() => _selectedFilter = 'All');
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 500;
-    final filteredNotes = _notes.where((note) {
-      final matchesSearch =
-          _query.isEmpty ||
-          note.title.toLowerCase().contains(_query) ||
-          note.body.toLowerCase().contains(_query) ||
-          note.tag.toLowerCase().contains(_query);
+    final notesAsync = ref.watch(notesProvider);
 
-      final matchesFilter = switch (_selectedFilter) {
-        'Pinned' => note.pinned,
-        'Tasks' => note.tag.toLowerCase() == 'work',
-        _ => true,
-      };
+    return notesAsync.when(
+      data: (notes) {
+        final filteredNotes = notes.where((note) {
+          final matchesSearch = _query.isEmpty ||
+              note.title.toLowerCase().contains(_query) ||
+              note.content.toLowerCase().contains(_query);
 
-      return matchesSearch && matchesFilter;
-    }).toList();
+          final matchesFilter = switch (_selectedFilter) {
+            'Pinned' => note.isPinned,
+            _ => true,
+          };
 
-    return LifeOsPage(
-      title: 'Notes',
-      subtitle: 'Capture ideas, plans, and quick thoughts',
-      trailing: IconButton(
-        onPressed: _showNoteActions,
-        icon: const Icon(Icons.more_vert_rounded),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showNoteEditor,
-        child: const Icon(Icons.add),
-      ),
-      children: [
-        GridView.count(
-          crossAxisCount: compact ? 2 : 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: compact ? 1.8 : 2.25,
-          children: compact
-              ? const [
-                  LifeOsMetricCard(
-                    title: 'Notes',
-                    value: '12',
-                    subtitle: 'Saved',
-                    icon: Icons.sticky_note_2_rounded,
-                    color: Color(0xFF6D4CFF),
-                  ),
-                  LifeOsMetricCard(
-                    title: 'Pinned',
-                    value: '3',
-                    subtitle: 'Important',
-                    icon: Icons.push_pin_rounded,
-                    color: Color(0xFFFF4AA2),
-                  ),
-                ]
-              : const [
-                  LifeOsMetricCard(
-                    title: 'Notes',
-                    value: '12',
-                    subtitle: 'Saved',
-                    icon: Icons.sticky_note_2_rounded,
-                    color: Color(0xFF6D4CFF),
-                  ),
-                  LifeOsMetricCard(
-                    title: 'Pinned',
-                    value: '3',
-                    subtitle: 'Important',
-                    icon: Icons.push_pin_rounded,
-                    color: Color(0xFFFF4AA2),
-                  ),
-                  LifeOsMetricCard(
+          return matchesSearch && matchesFilter;
+        }).toList();
+
+        return LifeOsPage(
+          title: 'Notes',
+          subtitle: 'Capture ideas, plans, and quick thoughts',
+          trailing: IconButton(
+            onPressed: () {}, // Removed static actions for now
+            icon: const Icon(Icons.more_vert_rounded),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showNoteEditor(),
+            child: const Icon(Icons.add),
+          ),
+          children: [
+            GridView.count(
+              crossAxisCount: compact ? 2 : 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: compact ? 1.8 : 2.25,
+              children: [
+                LifeOsMetricCard(
+                  title: 'Notes',
+                  value: notes.length.toString(),
+                  subtitle: 'Saved',
+                  icon: Icons.sticky_note_2_rounded,
+                  color: const Color(0xFF6D4CFF),
+                ),
+                LifeOsMetricCard(
+                  title: 'Pinned',
+                  value: notes.where((n) => n.isPinned).length.toString(),
+                  subtitle: 'Important',
+                  icon: Icons.push_pin_rounded,
+                  color: const Color(0xFFFF4AA2),
+                ),
+                if (!compact)
+                  const LifeOsMetricCard(
                     title: 'Tasks',
-                    value: '4',
-                    subtitle: 'Action items',
+                    value: '0',
+                    subtitle: 'Linked',
                     icon: Icons.checklist_rounded,
                     color: Color(0xFF18A058),
                   ),
-                ],
-        ),
-        LifeOsSearchField(
-          hintText: 'Search notes...',
-          onChanged: (value) =>
-              setState(() => _query = value.trim().toLowerCase()),
-        ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ChoiceChip(
-              selected: _selectedFilter == 'All',
-              label: const Text('All'),
-              onSelected: (_) => setState(() => _selectedFilter = 'All'),
+              ],
             ),
-            ChoiceChip(
-              selected: _selectedFilter == 'Pinned',
-              label: const Text('Pinned'),
-              onSelected: (_) => setState(() => _selectedFilter = 'Pinned'),
+            LifeOsSearchField(
+              hintText: 'Search notes...',
+              onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
             ),
-            ChoiceChip(
-              selected: _selectedFilter == 'Tasks',
-              label: const Text('Tasks'),
-              onSelected: (_) => setState(() => _selectedFilter = 'Tasks'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  selected: _selectedFilter == 'All',
+                  label: const Text('All'),
+                  onSelected: (_) => setState(() => _selectedFilter = 'All'),
+                ),
+                ChoiceChip(
+                  selected: _selectedFilter == 'Pinned',
+                  label: const Text('Pinned'),
+                  onSelected: (_) => setState(() => _selectedFilter = 'Pinned'),
+                ),
+              ],
             ),
+            if (filteredNotes.isEmpty)
+              LifeOsEmptyState(
+                title: notes.isEmpty ? 'No notes yet' : 'No results found',
+                subtitle: notes.isEmpty ? 'Capture your first thought or plan now.' : 'Try searching for something else.',
+                icon: Icons.notes_rounded,
+                actionLabel: notes.isEmpty ? 'Create Note' : null,
+                onAction: () => _showNoteEditor(),
+              )
+            else
+              ...filteredNotes.map(
+                (note) => LifeOsListTile(
+                  title: note.title,
+                  subtitle: note.content,
+                  icon: Icons.note_alt_rounded,
+                  color: lifeOsPurple,
+                  trailing: note.isPinned ? const Icon(Icons.push_pin_rounded, size: 18) : const Icon(Icons.chevron_right_rounded),
+                  onTap: () => _showNoteDetails(note),
+                ),
+              ),
           ],
-        ),
-        if (filteredNotes.isEmpty)
-          LifeOsCard(
-            child: Text(
-              'No notes matched your search.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          )
-        else
-          ...filteredNotes.map(
-            (note) => compact
-                ? LifeOsCard(
-                    onTap: () => _showNoteDetails(note),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: note.color.withValues(alpha: .12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                note.icon,
-                                color: note.color,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                note.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                            ),
-                            Icon(
-                              note.pinned
-                                  ? Icons.push_pin_rounded
-                                  : Icons.chevron_right_rounded,
-                              size: 18,
-                              color: lifeOsMuted,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          note.body,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
-                        ),
-                        const SizedBox(height: 10),
-                        _TagPill(label: note.tag, color: note.color),
-                      ],
-                    ),
-                  )
-                : LifeOsListTile(
-                    title: note.title,
-                    subtitle: '${note.tag} • ${note.body}',
-                    icon: note.icon,
-                    color: note.color,
-                    trailing: IconButton(
-                      onPressed: () => _showNoteDetails(note),
-                      icon: Icon(
-                        note.pinned
-                            ? Icons.push_pin_rounded
-                            : Icons.chevron_right_rounded,
-                      ),
-                    ),
-                    onTap: () => _showNoteDetails(note),
-                  ),
-          ),
-      ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 }

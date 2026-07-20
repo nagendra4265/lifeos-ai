@@ -139,30 +139,93 @@ class LifeOsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      padding: padding,
+    return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border.all(color: lifeOsBorder),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .035),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: .03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Material(color: Colors.transparent, child: child),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: padding,
+            child: child,
+          ),
+        ),
+      ),
     );
+  }
+}
 
-    if (onTap == null) return card;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: card,
+class LifeOsEmptyState extends StatelessWidget {
+  const LifeOsEmptyState({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.actionLabel,
+    this.onAction,
+    super.key,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: lifeOsPurple.withValues(alpha: .05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 48, color: lifeOsPurple.withValues(alpha: .4)),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: lifeOsMuted,
+                  ),
+            ),
+            if (actionLabel != null) ...[
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -209,6 +272,7 @@ class LifeOsMetricCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.subtitle,
+    this.subtitleColor,
     super.key,
   });
 
@@ -217,6 +281,7 @@ class LifeOsMetricCard extends StatelessWidget {
   final String? subtitle;
   final IconData icon;
   final Color color;
+  final Color? subtitleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +322,8 @@ class LifeOsMetricCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: color,
+                      color: subtitleColor ?? color,
+                      fontWeight: subtitleColor != null ? FontWeight.bold : null,
                       fontSize: compact ? 10 : null,
                     ),
                   ),
@@ -337,10 +403,11 @@ class LifeOsListTile extends StatelessWidget {
 }
 
 class LifeOsSectionTitle extends StatelessWidget {
-  const LifeOsSectionTitle({required this.title, this.action, super.key});
+  const LifeOsSectionTitle({required this.title, this.action, this.onTap, super.key});
 
   final String title;
   final String? action;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -355,11 +422,18 @@ class LifeOsSectionTitle extends StatelessWidget {
           ),
         ),
         if (action != null)
-          Text(
-            action!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: lifeOsPurple,
-              fontWeight: FontWeight.w700,
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                action!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: lifeOsPurple,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
       ],

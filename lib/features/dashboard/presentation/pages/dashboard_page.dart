@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_application_1/core/providers/tasks_provider.dart';
+import 'package:flutter_application_1/core/providers/expenses_provider.dart';
+import 'package:flutter_application_1/core/providers/notes_provider.dart';
+import 'package:flutter_application_1/core/providers/reminders_provider.dart';
+import 'package:flutter_application_1/core/providers/user_profile_provider.dart';
+import 'package:flutter_application_1/core/providers/memories_provider.dart';
+import 'package:flutter_application_1/features/documents/data/documents_notifier.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_application_1/core/widgets/lifeos_ui.dart';
 
@@ -98,11 +107,20 @@ void _showDashboardSnack(BuildContext context, String message) {
     );
 }
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileProvider);
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -124,7 +142,7 @@ class DashboardPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Good Morning, Arjun',
+                    '${_getGreeting()}, ${profile.name.split(' ')[0]}',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -142,15 +160,19 @@ class DashboardPage extends StatelessWidget {
                   if (wide)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Expanded(flex: 3, child: _MainOverview()),
-                        SizedBox(width: 16),
-                        SizedBox(width: 300, child: _RightRail()),
+                      children: [
+                        Expanded(flex: 3, child: const _MainOverview()),
+                        const SizedBox(width: 16),
+                        const SizedBox(width: 300, child: _RightRail()),
                       ],
                     )
                   else ...[
                     const _MainOverview(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+                    const LifeOsSectionTitle(title: 'Recent Memories'),
+                    const SizedBox(height: 12),
+                    const _RecentMemories(),
+                    const SizedBox(height: 20),
                     const _RightRail(),
                   ],
                   const SizedBox(height: 16),
@@ -244,50 +266,22 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _SummaryGrid extends StatelessWidget {
+class _SummaryGrid extends ConsumerWidget {
   const _SummaryGrid({required this.wide});
 
   final bool wide;
 
   @override
-  Widget build(BuildContext context) {
-    final cards = const [
-      LifeOsMetricCard(
-        title: 'Tasks',
-        value: '12',
-        subtitle: 'Pending',
-        icon: Icons.checklist_rounded,
-        color: Color(0xFFFF8A00),
-      ),
-      LifeOsMetricCard(
-        title: 'Expenses',
-        value: '₹2,450',
-        subtitle: 'Today',
-        icon: Icons.account_balance_wallet_rounded,
-        color: Color(0xFF18A058),
-      ),
-      LifeOsMetricCard(
-        title: 'Events',
-        value: '5',
-        subtitle: 'Today',
-        icon: Icons.calendar_month_rounded,
-        color: Color(0xFF6D4CFF),
-      ),
-      LifeOsMetricCard(
-        title: 'Health Score',
-        value: '86',
-        subtitle: 'Good',
-        icon: Icons.monitor_heart_rounded,
-        color: Color(0xFFFF4AA2),
-      ),
-      LifeOsMetricCard(
-        title: 'Documents',
-        value: '12',
-        subtitle: 'Expiring soon',
-        icon: Icons.description_rounded,
-        color: Color(0xFFFF7A45),
-      ),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(tasksProvider).valueOrNull ?? [];
+    final expenses = ref.watch(expensesProvider).valueOrNull ?? [];
+    final reminders = ref.watch(remindersProvider).valueOrNull ?? [];
+    
+    final todayExpenses = expenses.where((e) => 
+      e.date.day == DateTime.now().day && 
+      e.date.month == DateTime.now().month && 
+      e.date.year == DateTime.now().year
+    ).fold<double>(0, (sum, e) => sum + e.amount);
 
     return GridView.count(
       crossAxisCount: wide ? 5 : 2,
@@ -296,7 +290,43 @@ class _SummaryGrid extends StatelessWidget {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       physics: const NeverScrollableScrollPhysics(),
-      children: cards,
+      children: [
+        LifeOsMetricCard(
+          title: 'Tasks',
+          value: tasks.where((t) => !t.isCompleted).length.toString(),
+          subtitle: 'Pending',
+          icon: Icons.checklist_rounded,
+          color: const Color(0xFFFF8A00),
+        ),
+        LifeOsMetricCard(
+          title: 'Expenses',
+          value: NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(todayExpenses),
+          subtitle: 'Today',
+          icon: Icons.account_balance_wallet_rounded,
+          color: const Color(0xFF18A058),
+        ),
+        LifeOsMetricCard(
+          title: 'Reminders',
+          value: reminders.length.toString(),
+          subtitle: 'Active',
+          icon: Icons.notifications_active_rounded,
+          color: const Color(0xFF6D4CFF),
+        ),
+        const LifeOsMetricCard(
+          title: 'Health Score',
+          value: '86',
+          subtitle: 'Good',
+          icon: Icons.monitor_heart_rounded,
+          color: Color(0xFFFF4AA2),
+        ),
+        const LifeOsMetricCard(
+          title: 'Documents',
+          value: '12',
+          subtitle: 'Expiring soon',
+          icon: Icons.description_rounded,
+          color: Color(0xFFFF7A45),
+        ),
+      ],
     );
   }
 }
@@ -308,28 +338,28 @@ class _MainOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     if (width < 900) {
-      return const Column(
+      return Column(
         children: [
-          _MonthlyOverview(),
-          SizedBox(height: 14),
-          _ReminderPanel(),
-          SizedBox(height: 14),
-          _AiSuggestions(),
+          const _MonthlyOverview(),
+          const SizedBox(height: 14),
+          const _ReminderPanel(),
+          const SizedBox(height: 14),
+          const _AiSuggestions(),
         ],
       );
     }
 
-    return const Row(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _MonthlyOverview()),
-        SizedBox(width: 14),
+        Expanded(child: const _MonthlyOverview()),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             children: [
-              _ReminderPanel(),
-              SizedBox(height: 14),
-              _AiSuggestions(),
+              const _ReminderPanel(),
+              const SizedBox(height: 14),
+              const _AiSuggestions(),
             ],
           ),
         ),
@@ -338,38 +368,45 @@ class _MainOverview extends StatelessWidget {
   }
 }
 
-class _MonthlyOverview extends StatelessWidget {
+class _MonthlyOverview extends ConsumerWidget {
   const _MonthlyOverview();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expenses = ref.watch(expensesProvider).valueOrNull ?? [];
+    final currentMonth = DateTime.now().month;
+    final currentYear = DateTime.now().year;
+    
+    final monthlyExpenses = expenses.where((e) => 
+      e.date.month == currentMonth && e.date.year == currentYear
+    ).toList();
+    
+    final total = monthlyExpenses.fold<double>(0, (sum, e) => sum + e.amount);
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
     return LifeOsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LifeOsSectionTitle(
+          LifeOsSectionTitle(
             title: 'Monthly Overview',
-            action: 'May 2024',
+            action: DateFormat('MMM yyyy').format(DateTime.now()),
           ),
           const SizedBox(height: 18),
           Text(
             'Total Expenses',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: lifeOsMuted),
           ),
           const SizedBox(height: 4),
           Text(
-            '₹48,650',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            formatter.format(total),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           const Text(
-            '-18.6% vs Apr 2024',
+            'Live tracking enabled',
             style: TextStyle(
-              color: Color(0xFFFF4AA2),
+              color: Color(0xFF18A058),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -389,32 +426,9 @@ class _MonthlyOverview extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
-                  children: const [
-                    _Legend(
-                      label: 'Food & Dining',
-                      value: '32%',
-                      color: Color(0xFF6D4CFF),
-                    ),
-                    _Legend(
-                      label: 'Transport',
-                      value: '18%',
-                      color: Color(0xFFFF4AA2),
-                    ),
-                    _Legend(
-                      label: 'Shopping',
-                      value: '15%',
-                      color: Color(0xFF18A058),
-                    ),
-                    _Legend(
-                      label: 'Bills & Utilities',
-                      value: '12%',
-                      color: Color(0xFFFFB547),
-                    ),
-                    _Legend(
-                      label: 'Health',
-                      value: '8%',
-                      color: Color(0xFF00A8FF),
-                    ),
+                  children: [
+                    _Legend(label: 'Transactions', value: monthlyExpenses.length.toString(), color: const Color(0xFF6D4CFF)),
+                    const _Legend(label: 'Trend', value: 'Updating...', color: Color(0xFFFF4AA2)),
                   ],
                 ),
               ),
@@ -468,73 +482,107 @@ class _Legend extends StatelessWidget {
   }
 }
 
-class _ReminderPanel extends StatelessWidget {
+class _ReminderPanel extends ConsumerWidget {
   const _ReminderPanel();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reminders = ref.watch(remindersProvider).valueOrNull ?? [];
+    final display = reminders.take(3).toList();
+
     return LifeOsCard(
       child: Column(
-        children: const [
-          LifeOsSectionTitle(title: 'Upcoming Reminders'),
-          SizedBox(height: 12),
-          LifeOsListTile(
-            title: 'Car Insurance Renewal',
-            subtitle: 'May 20, 2024',
-            icon: Icons.car_crash_rounded,
-            color: Color(0xFFFF4AA2),
+        children: [
+          LifeOsSectionTitle(
+            title: 'Upcoming Reminders',
+            action: 'View All',
+            onTap: () => context.go('/reminders'),
           ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Doctor Appointment',
-            subtitle: 'May 21, 2024 - 11:00 AM',
-            icon: Icons.local_hospital_rounded,
-            color: Color(0xFF3D5AFE),
-          ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Passport Expiry',
-            subtitle: 'Jun 12, 2024',
-            icon: Icons.badge_rounded,
-            color: Color(0xFFFFB547),
-          ),
+          const SizedBox(height: 12),
+          if (display.isEmpty)
+            const Center(child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('No reminders.'),
+            ))
+          else
+            ...display.map((reminder) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: LifeOsListTile(
+                title: reminder.title,
+                subtitle: DateFormat('MMM dd, hh:mm a').format(reminder.dateTime),
+                icon: Icons.notifications_active_rounded,
+                color: const Color(0xFFFF4AA2),
+                onTap: () => context.go('/reminders'),
+              ),
+            )),
         ],
       ),
     );
   }
 }
 
-class _AiSuggestions extends StatelessWidget {
+class _AiSuggestions extends ConsumerWidget {
   const _AiSuggestions();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(tasksProvider).valueOrNull ?? [];
+    final expenses = ref.watch(expensesProvider).valueOrNull ?? [];
+    final reminders = ref.watch(remindersProvider).valueOrNull ?? [];
+    
+    final pendingTasks = tasks.where((t) => !t.isCompleted).length;
+    final totalSpent = expenses.fold<double>(0, (sum, e) => sum + e.amount);
+    final overdueReminders = reminders.where((r) => r.dateTime.isBefore(DateTime.now())).length;
+
     return LifeOsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          LifeOsSectionTitle(title: 'AI suggestions'),
-          SizedBox(height: 12),
-          LifeOsListTile(
-            title: 'Review your insurance renewal next week',
-            subtitle: 'You spent more on food this month. Want to see why?',
-            icon: Icons.lightbulb_outline_rounded,
-            color: Color(0xFF6D4CFF),
-          ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: '2 documents are expiring soon',
-            subtitle: 'Passport and insurance need attention.',
-            icon: Icons.description_outlined,
-            color: Color(0xFF8B5CF6),
-          ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Your sugar levels are normal',
-            subtitle: 'Keep it up.',
-            icon: Icons.health_and_safety_outlined,
-            color: Color(0xFF18A058),
-          ),
+        children: [
+          const LifeOsSectionTitle(title: 'AI suggestions'),
+          const SizedBox(height: 12),
+          if (pendingTasks > 0)
+            LifeOsListTile(
+              title: 'You have $pendingTasks pending tasks',
+              subtitle: 'Focus on your highest priority items today.',
+              icon: Icons.auto_awesome_rounded,
+              color: const Color(0xFF6D4CFF),
+              onTap: () => context.go('/tasks'),
+            ),
+          if (overdueReminders > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: LifeOsListTile(
+                title: '$overdueReminders items need attention',
+                subtitle: 'Check your reminders for overdue events.',
+                icon: Icons.priority_high_rounded,
+                color: Colors.orangeAccent,
+                onTap: () => context.go('/reminders'),
+              ),
+            ),
+          if (pendingTasks == 0 && overdueReminders == 0)
+            const LifeOsListTile(
+              title: 'Everything is on track',
+              subtitle: 'You are all caught up for now.',
+              icon: Icons.check_circle_outline_rounded,
+              color: Color(0xFF18A058),
+            ),
+          const SizedBox(height: 10),
+          if (totalSpent > 10000)
+            LifeOsListTile(
+              title: 'Spending Alert',
+              subtitle: 'You\'ve spent ${NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(totalSpent)} this month.',
+              icon: Icons.insights_rounded,
+              color: const Color(0xFF8B5CF6),
+              onTap: () => context.go('/expenses'),
+            )
+          else
+            LifeOsListTile(
+              title: 'Healthy Budget',
+              subtitle: 'Your spending is well within limits.',
+              icon: Icons.savings_rounded,
+              color: const Color(0xFF00B8FF),
+              onTap: () => context.go('/expenses'),
+            ),
         ],
       ),
     );
@@ -547,80 +595,168 @@ class _RightRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [_MiniCalendar(), SizedBox(height: 14), _RecentNotes()],
+      children: [_MiniCalendar(), const SizedBox(height: 14), _RecentNotes()],
     );
   }
 }
 
-class _MiniCalendar extends StatelessWidget {
+class _MiniCalendar extends ConsumerWidget {
   const _MiniCalendar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reminders = ref.watch(remindersProvider).valueOrNull ?? [];
+    final today = reminders.where((r) => 
+      r.dateTime.day == DateTime.now().day && 
+      r.dateTime.month == DateTime.now().month && 
+      r.dateTime.year == DateTime.now().year
+    ).toList();
+
     return LifeOsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          LifeOsSectionTitle(title: 'Calendar'),
-          SizedBox(height: 12),
-          LifeOsListTile(
-            title: 'Doctor Appointment',
-            subtitle: '11:00 AM - 12:00 PM',
-            icon: Icons.local_hospital_rounded,
-            color: Color(0xFF6D4CFF),
+        children: [
+          LifeOsSectionTitle(
+            title: 'Calendar', 
+            action: 'View All',
+            onTap: () => context.go('/calendar'),
           ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Team Standup',
-            subtitle: '02:00 - 03:00 PM',
-            icon: Icons.groups_rounded,
-            color: Color(0xFFFF7A45),
-          ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Dinner with Rahul',
-            subtitle: '08:00 - 10:00 PM',
-            icon: Icons.restaurant_rounded,
-            color: Color(0xFFFF4AA2),
-          ),
+          const SizedBox(height: 12),
+          if (today.isEmpty)
+            const Center(child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('No events today.'),
+            ))
+          else
+            ...today.take(3).map((event) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: LifeOsListTile(
+                title: event.title,
+                subtitle: DateFormat('hh:mm a').format(event.dateTime),
+                icon: Icons.calendar_today_rounded,
+                color: const Color(0xFF6D4CFF),
+                onTap: () => context.go('/calendar'),
+              ),
+            )),
         ],
       ),
     );
   }
 }
 
-class _RecentNotes extends StatelessWidget {
+class _RecentNotes extends ConsumerWidget {
   const _RecentNotes();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notes = ref.watch(notesProvider).valueOrNull ?? [];
+    final recent = notes.toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final display = recent.take(3).toList();
+
     return LifeOsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          LifeOsSectionTitle(title: 'Recent Notes', action: 'View All'),
-          SizedBox(height: 12),
-          LifeOsListTile(
-            title: 'Goa Trip Plan',
-            subtitle: '2h ago',
-            icon: Icons.note_alt_rounded,
-            color: Color(0xFFFFB547),
+        children: [
+          LifeOsSectionTitle(
+            title: 'Recent Notes', 
+            action: 'View All',
+            onTap: () => context.go('/notes'),
           ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Project Ideas',
-            subtitle: '1d ago',
-            icon: Icons.lightbulb_outline_rounded,
-            color: Color(0xFF3D5AFE),
-          ),
-          SizedBox(height: 10),
-          LifeOsListTile(
-            title: 'Daily Thoughts',
-            subtitle: '2d ago',
-            icon: Icons.edit_note_rounded,
-            color: Color(0xFF6D4CFF),
-          ),
+          const SizedBox(height: 12),
+          if (display.isEmpty)
+            const Center(child: Text('No notes yet.'))
+          else
+            ...display.map((note) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: LifeOsListTile(
+                title: note.title,
+                subtitle: _formatRelativeDate(note.updatedAt),
+                icon: Icons.note_alt_rounded,
+                color: const Color(0xFFFFB547),
+                onTap: () => context.go('/notes'),
+              ),
+            )),
         ],
+      ),
+    );
+  }
+
+  String _formatRelativeDate(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+
+class _RecentMemories extends ConsumerWidget {
+  const _RecentMemories();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final memories = ref.watch(memoriesProvider).valueOrNull ?? [];
+    if (memories.isEmpty) {
+      return LifeOsCard(
+        onTap: () => context.go('/memories'),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text('No memories yet. Tap to add one!'),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 160,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: memories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final memory = memories[index];
+          return Container(
+            width: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  lifeOsPurple.withValues(alpha: .7),
+                  lifeOsIndigo,
+                ],
+              ),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
+                const Spacer(),
+                Text(
+                  memory.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('MMM yyyy').format(memory.date),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: .7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

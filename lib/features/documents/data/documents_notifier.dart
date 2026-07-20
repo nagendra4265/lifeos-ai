@@ -1,68 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../domain/document.dart';
+import 'package:flutter_application_1/core/models/document.dart';
+import 'package:flutter_application_1/core/providers/documents_provider.dart';
+import 'package:flutter_application_1/core/repositories/documents_repository.dart';
 
 final documentsNotifierProvider =
     StateNotifierProvider<DocumentsNotifier, List<Document>>(
-      (ref) => DocumentsNotifier(),
+      (ref) => DocumentsNotifier(ref.watch(documentsRepositoryProvider)),
     );
 
 class DocumentsNotifier extends StateNotifier<List<Document>> {
-  DocumentsNotifier()
-    : super(const [
-        Document(
-          id: 'passport',
-          title: 'Passport',
-          category: 'Identity',
-          issuer: 'Government of India',
-          issuedDate: '2023-03-18',
-          expiryDate: '2028-02-14',
-          holderName: 'Rohan Kumar',
-          documentNumber: 'X1234567',
-          summary:
-              'Official passport scan with machine-readable zone (MRZ) and identity fields extracted by OCR.',
-          previewNote:
-              'AI-ready passport scan with OCR diagnostics and expiry watch.',
-          ocrExtractedText:
-              'P<INROHANKUMAR<<<<<<<<<<<\nX1234567<8IND9208220M2802140<<<<<<<<<<<<<<04',
-          icon: Icons.card_membership_rounded,
-          metadata: {
-            'Nationality': 'Indian',
-            'Date of birth': '1992-08-22',
-            'Place of birth': 'Mumbai',
-            'MRZ line 1': 'P<INROHANKUMAR<<<<<<<<<<<',
-            'MRZ line 2': 'X1234567<8IND9208220M2802140<<<<<<<<<<<<<<04',
-          },
-          tags: ['travel', 'identity', 'passport'],
-        ),
-        Document(
-          id: 'insurance',
-          title: 'Health Insurance',
-          category: 'Medical',
-          issuer: 'Swasthya Care',
-          issuedDate: '2024-09-01',
-          expiryDate: '2029-09-01',
-          holderName: 'Ananya Sharma',
-          documentNumber: 'IN-8293-2026',
-          summary:
-              'Health insurance policy with family coverage, extracted policy number, and issuer details.',
-          previewNote:
-              'PDF scan preview with OCR highlights and policy metadata.',
-          ocrExtractedText:
-              'Policy number: IN-8293-2026\nCoverage limit: ₹25,00,000\nPlan tier: Premium Plus',
-          icon: Icons.shield_rounded,
-          metadata: {
-            'Policy type': 'Family floater',
-            'Coverage': '₹25,00,000',
-            'Members covered': '4',
-            'Plan tier': 'Premium Plus',
-          },
-          tags: ['insurance', 'medical', 'family'],
-        ),
-      ]);
+  final DocumentsRepository _repository;
+  
+  DocumentsNotifier(this._repository) : super(const []) {
+    _load();
+  }
 
-  static const Document unknownDocument = Document(
+  static final Document unknownDocument = Document(
     id: 'unknown',
     title: 'Unknown document',
     category: 'Unknown',
@@ -74,22 +28,51 @@ class DocumentsNotifier extends StateNotifier<List<Document>> {
     summary: 'No metadata available for this document.',
     previewNote: 'No preview available.',
     ocrExtractedText: 'No OCR data available.',
-    icon: Icons.document_scanner_rounded,
+    iconCodePoint: Icons.document_scanner_rounded.codePoint,
     metadata: {},
     tags: [],
   );
 
-  void addDocument(Document document) {
-    state = [...state, document];
+  Future<void> _load() async {
+    final docs = await _repository.getAll();
+    if (docs.isEmpty) {
+      // Seed with initial data if empty
+      final initialDocs = [
+        Document(
+          id: 'passport',
+          title: 'Passport',
+          category: 'Identity',
+          issuer: 'Government of India',
+          issuedDate: '2023-03-18',
+          expiryDate: '2028-02-14',
+          holderName: 'Rohan Kumar',
+          documentNumber: 'X1234567',
+          summary: 'Official passport scan with Machine Readable Zone.',
+          iconCodePoint: Icons.card_membership_rounded.codePoint,
+          metadata: {'Nationality': 'Indian'},
+        ),
+      ];
+      for (var d in initialDocs) {
+        await _repository.save(d.id, d);
+      }
+      state = initialDocs;
+    } else {
+      state = docs;
+    }
   }
 
-  void updateDocument(Document document) {
-    state = state
-        .map((item) => item.id == document.id ? document : item)
-        .toList();
+  Future<void> addDocument(Document document) async {
+    await _repository.save(document.id, document);
+    state = await _repository.getAll();
   }
 
-  void removeDocument(String id) {
-    state = state.where((document) => document.id != id).toList();
+  Future<void> updateDocument(Document document) async {
+    await _repository.save(document.id, document);
+    state = await _repository.getAll();
+  }
+
+  Future<void> removeDocument(String id) async {
+    await _repository.delete(id);
+    state = await _repository.getAll();
   }
 }
